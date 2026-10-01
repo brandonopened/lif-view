@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lif-view · Course Grades Across Colleges</title>
+<style>
+  :root { --paper:#f4f6f8; --panel:#fff; --ink:#17232b; --slate:#5f6f7a; --rule:#d6dee4; --code:#eef2f5;
+    --district:#a66a12; --district-wash:#fbf1e0; --riverbend:#147d74; --riverbend-wash:#ddf3ef; --stateu:#2f5fa8; --stateu-wash:#e3ecfa; --warn:#7a4a0c; --warn-wash:#fbebd6; --bad:#a3202a; --bad-wash:#fbe3e5; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1 { font-size: 26px; margin: 0 0 4px; } h2 { font-size: 17px; margin: 0; }
+  .sub { color: var(--slate); margin: 0 0 18px; max-width: 80ch; }
+  .search { display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:var(--panel); border:1px solid var(--rule); border-radius:10px; padding:14px 16px; }
+  .search label { font-weight:600; }
+  .search select { flex: 1 1 320px; min-width: 240px; font: inherit; padding: 8px 10px; border:1px solid var(--rule); border-radius:6px; background: #fff; }
+  .tag.running { background: var(--warn-wash); color: var(--warn); }
+  .search button { font: inherit; padding: 8px 14px; border-radius:6px; border:1px solid var(--rule); background:var(--code); cursor:pointer; }
+  .search button.primary { background: var(--ink); color:#fff; border-color: var(--ink); }
+  .hint { color: var(--slate); font-size: 13px; width: 100%; }
+  .student { margin-top: 18px; background:var(--panel); border:1px solid var(--rule); border-left: 5px solid var(--district); border-radius: 10px; padding: 12px 16px; display:flex; flex-wrap:wrap; gap: 6px 26px; align-items: baseline; }
+  .student .name { font-size: 20px; font-weight: 600; }
+  .student .meta { color: var(--slate); font-size: 13.5px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-top: 16px; }
+  .college { background:var(--panel); border:1px solid var(--rule); border-radius:10px; overflow:hidden; }
+  .college header { padding: 12px 16px; border-bottom:1px solid var(--rule); display:flex; justify-content:space-between; align-items:baseline; gap: 10px; flex-wrap: wrap; }
+  .college.riverbend header { background: var(--riverbend-wash); } .college.riverbend h2 { color: var(--riverbend); }
+  .college.stateu header { background: var(--stateu-wash); } .college.stateu h2 { color: var(--stateu); }
+  .college .route { font-size: 12.5px; color: var(--slate); }
+  table { width:100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align:left; padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--slate); font-weight: 600; }
+  td.grade { font-weight: 700; font-size: 16px; white-space: nowrap; } td.num { color: var(--slate); font-size: 12.5px; }
+  .tag { display:inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 10px; background: var(--code); color: var(--slate); margin-right: 4px; }
+  .tag.dual { background: var(--warn-wash); color: var(--warn); }
+  .tag.progress { background: var(--stateu-wash); color: var(--stateu); } .tag.withdrawn { background: var(--bad-wash); color: var(--bad); } .tag.completed { background: var(--riverbend-wash); color: var(--riverbend); }
+  .foot { padding: 10px 16px; font-size: 12.5px; color: var(--slate); border-top: 1px solid var(--rule); }
+  .empty { padding: 18px 16px; color: var(--slate); }
+  .error { background: var(--bad-wash); color: var(--bad); padding: 10px 16px; }
+  details { margin-top: 16px; } summary { cursor: pointer; color: var(--slate); }
+  pre { background: var(--code); border-radius: 8px; padding: 12px; overflow:auto; font-size: 12.5px; max-height: 420px; }
+  .status { margin-top: 12px; color: var(--slate); font-size: 13.5px; }
+  .play { margin-top: 28px; }
+  .play > h2 { font-size: 20px; margin: 0 0 4px; }
+  .mapping { background: var(--panel); border:1px solid var(--rule); border-radius:10px; margin-top: 14px; overflow: hidden; }
+  .mapping > header { padding: 12px 16px; border-bottom: 1px solid var(--rule); display:flex; flex-wrap:wrap; gap: 6px 18px; align-items: baseline; }
+  .mapping.riverbend > header { background: var(--riverbend-wash); } .mapping.stateu > header { background: var(--stateu-wash); }
+  .mapping > header h3 { margin: 0; font-size: 16px; } .mapping > header .route { color: var(--slate); font-size: 12.5px; }
+  .panes { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; padding: 12px 16px; }
+  .pane { border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  .pane .cap { padding: 8px 12px; font-weight: 600; font-size: 13.5px; border-bottom: 1px solid var(--rule); background: var(--code); }
+  .pane pre { margin: 0; border-radius: 0; max-height: 460px; background: #fff; }
+  .json .k { color: #1d4f91; } .json .s { color: #8a1f5a; } .json .n { color: #2c6e2c; } .json .b { color: #a05a00; }
+  .json .hl { background: #fff1b8; border-bottom: 2px solid #e0a44a; border-radius: 2px; padding: 0 2px; cursor: help; }
+  .json .hl-line { background: #fff8e1; display: inline-block; width: 100%; margin: 0 -2px; padding: 0 2px; }
+  .legend { padding: 0 16px 10px; font-size: 12.5px; color: var(--slate); }
+  .legend .sw { display:inline-block; width: 14px; height: 10px; background: #fff1b8; border-bottom: 2px solid #e0a44a; vertical-align: middle; margin-right: 5px; }
+  .rules { padding: 0 16px 14px; }
+  .rules .bar { display:flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 4px 0 8px; font-size: 13.5px; }
+  .rules table { font-size: 13px; } .rules td.expr { font-family: Consolas, ui-monospace, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-word; max-width: 460px; }
+  .rules td.note { color: var(--slate); max-width: 380px; }
+  .prov { display:inline-block; font-size: 11px; padding: 1px 6px; border-radius: 8px; background: var(--riverbend-wash); color: var(--riverbend); white-space: nowrap; }
+  .prov.identity { background: var(--code); color: var(--slate); } .prov.educore { background: #ece7fa; color: #6b4ec9; }
+  .link { background: none; border: none; color: var(--stateu); cursor: pointer; font: inherit; padding: 0; text-decoration: underline; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Course Grades Across Colleges</h1>
+  <p class="sub">Type a student's name. The district's record for that student is sent, unchanged, through each college's own mapping in the LIF Metadata Registry, and each college's view of the courses and grades comes back. Same student, same source record, two registries, two answers.</p>
+
+  <form class="search" id="form">
+    <label for="q">Student</label>
+    <select id="q"><option value="">Choose a student…</option></select>
+    <button class="primary" type="submit">Look up</button>
+    <button type="button" id="clear">Clear</button>
+    <span class="hint" id="hint">Loading the district's student roster…</span>
+  </form>
+
+  <div id="out"></div>
+  <div class="play" id="play"></div>
+  <p class="status" id="status"></p>
+</main>
+
+<script src="config.js"></script>
+<script>
+// Configuration lives in config.js (API key, the two registries, model names).
+
+const $ = (id) => document.getElementById(id);
+const headers = { "X-API-Key": API_KEY, "Content-Type": "application/json" };
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function getJson(url, init) {
+  const r = await fetch(url, { ...init, headers: { ...headers, ...(init?.headers || {}) } });
+  const text = await r.text();
+  let body; try { body = JSON.parse(text); } catch { body = text; }
+  if (!r.ok) throw new Error((body && body.detail && (typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail))) || `${r.status} ${r.statusText}`);
+  return body;
+}
+
+let samples = [];           // from /demo/samples: {id, label, sourceDataModelName, record}
+const modelIds = {};        // college.key -> { source name -> id, target -> id }
+const groupsByCollege = {}; // college.key -> [ {Id, Name, GroupVersion, SourceDataModelId, TargetDataModelId} ]
+const rulesCache = {};      // `${college.key}:${groupId}` -> rules
+let lastRun = null;         // { sample, results: { [college.key]: { result, error, group } } }
+
+// "Garcia, Sofia M. (604858)" -> "Sofia M. Garcia (604858)"; Ed-Fi labels are already first-last
+function displayName(label) {
+  const m = label.match(/^([^,(]+),\s*([^(]+?)\s*(\(.*\))?$/);
+  return m ? `${m[2]} ${m[1]} ${m[3] || ""}`.trim() : label;
+}
+
+async function loadRoster() {
+  samples = await getJson(`${ROSTER_MDR}/demo/samples`);
+  const sel = $("q");
+  const groups = {};
+  for (const s of samples) (groups[s.sourceDataModelName] ||= []).push(s);
+  for (const [source, list] of Object.entries(groups)) {
+    const g = document.createElement("optgroup");
+    g.label = source.includes("LIF") ? `${source} (the SIS export)` : source;
+    for (const s of list.sort((a, b) => displayName(a.label).localeCompare(displayName(b.label)))) {
+      const o = document.createElement("option"); o.value = s.id; o.textContent = displayName(s.label); g.appendChild(o);
+    }
+    sel.appendChild(g);
+  }
+  $("hint").textContent = `${samples.length} students on the district roster: ${samples.filter(s => s.sourceDataModelName.includes("LIF")).length} from the Northgate SIS export, ${samples.filter(s => s.sourceDataModelName.includes("Ed-Fi")).length} in Ed-Fi shape.`;
+}
+
+async function resolveModels(college) {
+  const rows = await getJson(`${college.mdr}/datamodels/?pagination=false`);
+  const list = Array.isArray(rows) ? rows : (rows.data || []);
+  const byName = {};
+  for (const m of list) { if (!byName[m.Name]) byName[m.Name] = m.Id; }   // first id wins (lowest = the seeded one)
+  const ids = { target: byName[college.targetModel], sources: {} };
+  for (const [sample, registered] of Object.entries(college.sourceModels)) ids.sources[sample] = byName[registered];
+  modelIds[college.key] = ids;
+  const groups = await getJson(`${college.mdr}/transformation_groups/?page=1&size=100`);
+  groupsByCollege[college.key] = Array.isArray(groups) ? groups : (groups.data || []);
+}
+
+// the mapping the Translator applies for a source/target pair: every group registered for the pair
+// (the Translator unions them); we show the newest version
+function groupFor(college, sourceId, targetId) {
+  const rows = (groupsByCollege[college.key] || []).filter(g => g.SourceDataModelId === sourceId && g.TargetDataModelId === targetId);
+  rows.sort((a, b) => String(b.GroupVersion).localeCompare(String(a.GroupVersion), undefined, { numeric: true }));
+  return rows[0] || null;
+}
+
+async function rulesFor(college, groupId) {
+  const key = `${college.key}:${groupId}`;
+  if (!rulesCache[key]) {
+    const exp = await getJson(`${college.mdr}/transformation_groups/${groupId}/export`);
+    rulesCache[key] = exp.Transformations || [];
+  }
+  return rulesCache[key];
+}
+
+function jsonHtml(value, highlight) {
+  const text = JSON.stringify(value, null, 2);
+  const lines = esc(text).split("\n").map((line) => {
+    let hit = false;
+    // the text is HTML-escaped already, so a JSON string reads &quot;...&quot; here
+    const out = line.replace(/(&quot;(?:(?!&quot;).)*&quot;)(\s*:)?|\b(true|false|null)\b|(-?\d+(?:\.\d+)?)/g, (m, str, colon, bool, num) => {
+      if (str) {
+        if (colon) {
+          const key = str.slice(6, -6);
+          const tip = highlight && highlight[key];
+          if (tip) { hit = true; return `<span class="k hl" title="${esc(tip)}">${str}</span>${colon}`; }
+          return `<span class="k">${str}</span>${colon}`;
+        }
+        return `<span class="s">${str}</span>`;
+      }
+      if (bool) return `<span class="b">${bool}</span>`;
+      return `<span class="n">${num}</span>`;
+    });
+    return hit ? `<span class="hl-line">${out}</span>` : out;
+  });
+  return lines.join("\n");
+}
+
+// Which leaf fields a mapping's hand-written rules read (source side) and write (target side).
+// Read: the rule's SourceAttributes (UniqueName after '~', last segment). Written: every lower-case
+// key the rule's JSONata emits. Identity copies are left out on purpose: they are the fields that
+// crossed unchanged.
+function touchedFields(rules) {
+  const read = {}, written = {};
+  const add = (map, key, rule) => { map[key] = map[key] ? `${map[key]}; ${rule}` : rule; };
+  for (const r of rules) {
+    if (!r.Alignment || r.Alignment === "identity") continue;
+    for (const a of r.SourceAttributes || []) {
+      const path = (a.EntityIdPath || "").split(",").pop();
+      const name = path.includes("~") ? path.split("~").pop().split(".").pop() : (a.AttributeName || "");
+      if (name) add(read, name, `read by rule ${r.Name}`);
+    }
+    for (const m of (r.Expression || "").matchAll(/"([a-z][A-Za-z0-9]*)"\s*:/g)) add(written, m[1], `written by rule ${r.Name}`);
+  }
+  return { read, written };
+}
+
+function provClass(a) { return !a ? "" : a === "identity" ? "identity" : a.startsWith("educore") ? "educore" : ""; }
+
+async function renderPlayground() {
+  const play = $("play");
+  if (!lastRun) { play.innerHTML = ""; return; }
+  const { sample, results } = lastRun;
+  play.innerHTML = `<h2>How each college produced that view</h2>
+    <p class="sub">The same district record went into each registry's mapping. Below, per college: the record in, the LIF record out, and the rules that did the work, read from that registry's <code>/transformation_groups/{id}/export</code>.</p>`;
+  for (const college of COLLEGES) {
+    const r = results[college.key] || {};
+    const sec = document.createElement("section"); sec.className = `mapping ${college.key}`;
+    const g = r.group;
+    const panes = (hl) => `<div class="panes">
+        <div class="pane"><div class="cap">In: ${esc(sample.sourceDataModelName)} record</div><pre class="json">${jsonHtml(sample.record, hl && hl.read)}</pre></div>
+        <div class="pane"><div class="cap">Out: ${esc(college.targetModel)}</div><pre class="json">${r.error ? esc(r.error) : jsonHtml(r.result, hl && hl.written)}</pre></div>
+      </div>`;
+    sec.innerHTML = `<header><h3>${esc(college.name)}</h3><span class="route">${g ? `${esc(g.Name)} · v${esc(g.GroupVersion)} · group ${g.Id}` : "no mapping found for this pair"} · ${esc(college.mdr)}</span></header>
+      ${panes(null)}
+      <div class="rules"><div class="bar"><span>Loading rules…</span></div></div>`;
+    play.appendChild(sec);
+    if (!g) { sec.querySelector(".rules").innerHTML = ""; continue; }
+    try {
+      const rules = await rulesFor(college, g.Id);
+      const authored = rules.filter(x => x.Alignment && x.Alignment !== "identity");
+      const hl = touchedFields(rules);
+      sec.querySelector(".panes").outerHTML = panes(hl) + `<div class="legend"><span class="sw"></span>Highlighted on the left: source fields a hand-written rule read (${Object.keys(hl.read).length}). On the right: fields a hand-written rule wrote (${Object.keys(hl.written).length}). Everything else came through an identity copy or is an empty container. Hover a highlighted field for the rule.</div>`;
+      const box = sec.querySelector(".rules");
+      const draw = (all) => {
+        const list = all ? rules : authored;
+        box.innerHTML = `<div class="bar"><span><b>${rules.length} rules</b> · ${authored.length} written by a person or drawn from EDUcore, ${rules.length - authored.length} identity copies</span>
+            ${rules.length > authored.length ? `<button class="link" id="tog-${college.key}">${all ? "show authored rules only" : "show all rules"}</button>` : ""}</div>
+          <table><thead><tr><th>Target</th><th>Provenance</th><th>JSONata</th><th>Notes</th></tr></thead><tbody>
+          ${list.map(x => `<tr><td><b>${esc(x.Name)}</b></td><td><span class="prov ${provClass(x.Alignment)}">${esc(x.Alignment || "—")}</span></td><td class="expr">${esc(x.Expression)}</td><td class="note">${esc(x.Notes || "")}</td></tr>`).join("")}
+          </tbody></table>`;
+        const t = box.querySelector(`#tog-${college.key}`); if (t) t.onclick = () => draw(!all);
+      };
+      draw(false);
+    } catch (e) {
+      sec.querySelector(".rules").innerHTML = `<div class="error">Could not load the rules: ${esc(e.message)}</div>`;
+    }
+  }
+}
+
+function findStudent(q) {
+  const needle = q.trim().toLowerCase();
+  if (!needle) return null;
+  return samples.find(s => s.id === q)
+      || samples.find(s => s.label.toLowerCase() === needle)
+      || samples.find(s => displayName(s.label).toLowerCase().startsWith(needle))
+      || samples.find(s => s.label.toLowerCase().startsWith(needle))
+      || samples.find(s => s.label.toLowerCase().includes(needle));
+}
+
+function statusTag(s) {
+  if (!s) return "";
+  const cls = /progress/i.test(s) ? "progress" : /withdraw/i.test(s) ? "withdrawn" : /completed/i.test(s) ? "completed" : "";
+  return `<span class="tag ${cls}">${esc(s)}</span>`;
+}
+
+function renderCollege(college, person, meta) {
+  const experiences = (person.CourseLearningExperience || []).filter(c => c.identifier || c.name || (c.Course && c.Course.length));
+  const rows = experiences.map(c => {
+    const course = (c.Course && c.Course[0]) || {};
+    const grade = c.experienceGrade || "—";
+    const running = c.experienceGrade && /progress/i.test(c.enrollmentStatusType || "") ? `<span class="tag running">running grade</span>` : "";
+    const num = c.experienceNumericalGrade != null ? `${c.experienceNumericalGrade}` : "";
+    const term = [c.startDate, c.endDate].filter(Boolean).join(" → ");
+    const flags = [course.courseLevelCharacteristic ? `<span class="tag dual">${esc(course.courseLevelCharacteristic)}</span>` : "",
+                   course.recognizedBy ? `<span class="tag">recognized by ${esc([].concat(course.recognizedBy).join(", "))}</span>` : ""].join("");
+    return `<tr><td><b>${esc(course.identifier || c.identifier || "")}</b><br><span class="num">${esc(course.name || c.name || "")}</span></td>
+      <td class="num">${esc(term)}</td><td>${statusTag(c.enrollmentStatusType)}${flags}</td>
+      <td class="grade">${esc(grade)}<br><span class="num">${esc(num)}</span>${running}</td><td class="num">${course.courseCreditValue != null ? esc(course.courseCreditValue) : ""}</td></tr>`;
+  }).join("");
+  const enrol = (person.ProgramLearningExperience || [])[0];
+  const also = [
+    (person.Birth || [])[0]?.birthDate ? `born ${(person.Birth[0].birthDate)}` : "",
+    (person.SexAndGender || [])[0]?.sex, (person.Culture || [])[0]?.ethnicity,
+    enrol ? `${enrol.identifier || ""} · ${enrol.participationStatus || ""}${enrol.exitDate ? " (left " + enrol.exitDate + ")" : ""}` : "",
+    (person.Identifier || []).map(i => `${i.identifierType || "id"} ${i.identifier}`).join(", "),
+  ].filter(Boolean).join(" · ");
+  return `<section class="college ${college.key}">
+    <header><h2>${esc(college.name)}</h2><span class="route">${esc(meta.source)} → ${esc(college.targetModel)} · mapping in the ${esc(college.key === "riverbend" ? "college" : "district")} registry (${esc(college.mdr)})</span></header>
+    ${rows ? `<table><thead><tr><th>Course</th><th>Term</th><th>Status</th><th>Grade</th><th>Credits</th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty">No course records came through this mapping.</div>`}
+    <div class="foot">${esc(also) || "No further fields."}${meta.ms ? ` · translated in ${meta.ms} ms` : ""}</div>
+  </section>`;
+}
+
+async function lookup(q) {
+  const s = findStudent(q);
+  const out = $("out");
+  if (!s) { out.innerHTML = `<div class="student"><span class="meta">No student matches “${esc(q)}”. Pick a name from the list.</span></div>`; return; }
+  $("q").value = s.id;
+  const person = s.record.Person || {};
+  const stu = s.record.Student || {};
+  const shown = stu.FirstName ? `${stu.FirstName} ${stu.MiddleName || ""} ${stu.LastSurname}`.replace(/\s+/g, " ") : displayName(person.Name?.[0]?.fullName || s.label);
+  out.innerHTML = `<div class="student"><span class="name">${esc(shown)}</span><span class="meta">district record: ${esc(s.sourceDataModelName)} · ${esc(s.file)}</span></div>
+    <div class="grid" id="cards">${COLLEGES.map(c => `<section class="college ${c.key}"><header><h2>${esc(c.name)}</h2></header><div class="empty">Translating…</div></section>`).join("")}</div>
+    <details><summary>The record as the district sent it</summary><pre>${esc(JSON.stringify(s.record, null, 2))}</pre></details>`;
+  const cards = $("cards");
+  $("play").innerHTML = "";
+  lastRun = { sample: s, results: {} };
+  const run = lastRun;
+  await Promise.all(COLLEGES.map(async (college, i) => {
+    const ids = modelIds[college.key] || {};
+    const sourceId = ids.sources?.[s.sourceDataModelName], targetId = ids.target;
+    const slot = cards.children[i];
+    if (!sourceId || !targetId) { slot.innerHTML = `<header><h2>${esc(college.name)}</h2></header><div class="error">This registry has no “${esc(s.sourceDataModelName)}” source model or no “${esc(college.targetModel)}” target.</div>`; return; }
+    const group = groupFor(college, sourceId, targetId);
+    const t0 = performance.now();
+    try {
+      const result = await getJson(`${college.mdr}/demo/translate?source_data_model_id=${sourceId}&target_data_model_id=${targetId}`, { method: "POST", body: JSON.stringify(s.record) });
+      run.results[college.key] = { result, group };
+      slot.outerHTML = renderCollege(college, result.Person || {}, { source: s.sourceDataModelName, ms: Math.round(performance.now() - t0) });
+    } catch (e) {
+      run.results[college.key] = { error: e.message, group };
+      slot.innerHTML = `<header><h2>${esc(college.name)}</h2></header><div class="error">${esc(e.message)}</div>`;
+    }
+  }));
+  if (lastRun === run) renderPlayground();
+}
+
+$("form").addEventListener("submit", (ev) => { ev.preventDefault(); lookup($("q").value); });
+$("q").addEventListener("change", () => { if ($("q").value) lookup($("q").value); });
+$("clear").addEventListener("click", () => { $("q").value = ""; $("out").innerHTML = ""; $("play").innerHTML = ""; lastRun = null; $("q").focus(); });
+
+(async () => {
+  try {
+    await Promise.all([loadRoster(), ...COLLEGES.map(resolveModels)]);
+    $("status").textContent = COLLEGES.map(c => `${c.name}: models ${JSON.stringify(modelIds[c.key])}`).join("  ·  ");
+    const q = new URLSearchParams(location.search).get("student");
+    if (q) lookup(q);
+  } catch (e) {
+    $("hint").textContent = `Could not reach the demo stack: ${e.message}. Are the MDR APIs on 8012 and 8022 running?`;
+  }
+})();
+</script>
+</body>
+</html>
