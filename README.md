@@ -78,3 +78,7 @@ the MDR's user login and swap the shared key for a per-user credential.
 
 Extracted from `deployments/advisor-demo-docker/demo-pages/course-grades.html` in the LIF Core `localworks`
 branch (schema-exchange demo), so it can live and move independently of the LIF Core repository.
+
+## Implementing it for a real district and college
+
+Who runs what, what to ask each party for, which keys go where, and the steps in order: [IMPLEMENTATION.md](IMPLEMENTATION.md).
