@@ -1,0 +1,212 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta charset="utf-8">
+<title>Dual Credit Counselor Data Flow</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root { --paper:#F4F6F8; --panel:#FFFFFF; --ink:#17232B; --slate:#5F6F7A; --rule:#D6DEE4; --code:#EEF2F5;
+    --district:#A66A12; --district-wash:#FBF1E0; --lif:#147D74; --lif-wash:#DDF3EF; --college:#2F5FA8; --college-wash:#E3ECFA; --educore:#6B4EC9; --educore-wash:#ECE7FA; --warn-wash:#FBEBD6; --warn-ink:#7A4A0C; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper:#121A20; --panel:#1A242C; --ink:#E7EDF1; --slate:#9DAEB9; --rule:#2E3C46; --code:#0F171D;
+    --district:#E0A44A; --district-wash:#3A2A12; --lif:#45C4B8; --lif-wash:#12332F; --college:#7FA4E8; --college-wash:#1B2A45; --educore:#A995F0; --educore-wash:#2A2246; --warn-wash:#3A2A17; --warn-ink:#F0C48A; } }
+  :root[data-theme="dark"] { --paper:#121A20; --panel:#1A242C; --ink:#E7EDF1; --slate:#9DAEB9; --rule:#2E3C46; --code:#0F171D;
+    --district:#E0A44A; --district-wash:#3A2A12; --lif:#45C4B8; --lif-wash:#12332F; --college:#7FA4E8; --college-wash:#1B2A45; --educore:#A995F0; --educore-wash:#2A2246; --warn-wash:#3A2A17; --warn-ink:#F0C48A; }
+  body { background: var(--paper); color: var(--ink); font-family: "IBM Plex Sans","Segoe UI",system-ui,sans-serif; font-size: 15px; line-height: 1.55; margin: 0; }
+  main { max-width: 1180px; margin: 0 auto; padding: 36px 24px 64px; }
+  h1,h2 { text-wrap: balance; font-weight: 600; line-height: 1.2; margin: 0; }
+  h1 { font-size: 30px; letter-spacing: -0.01em; } h2 { font-size: 19px; margin-top: 40px; }
+  p { margin: 10px 0 0; max-width: 78ch; }
+  .eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--slate); font-weight: 500; margin-bottom: 8px; }
+  .story { margin-top: 14px; padding: 12px 16px; border-left: 4px solid var(--college); background: var(--panel); border-radius: 0 6px 6px 0; max-width: none; color: var(--slate); }
+  figure { margin: 18px 0 0; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; padding: 20px; overflow-x: auto; }
+  figure svg { display: block; max-width: 100%; height: auto; min-width: 720px; margin: 0 auto; font-family: "IBM Plex Sans","Segoe UI",system-ui,sans-serif; color: var(--ink); }
+  figure svg .t { font-size: 13px; font-weight: 600; }
+  figure svg .s { font-size: 11.5px; fill: var(--slate); }
+  figure svg .l { font-size: 11px; fill: var(--slate); }
+  figure svg .b { font-size: 11px; font-weight: 600; fill: var(--panel); }
+  figcaption { font-size: 13.5px; color: var(--slate); margin-top: 12px; max-width: 90ch; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--slate); margin-top: 10px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--rule); }
+  code { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-size: .9em; background: var(--code); padding: 1px 5px; border-radius: 3px; }
+  .tablewrap { overflow-x: auto; margin-top: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); }
+  th { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--slate); font-weight: 500; }
+  td.n { font-weight: 600; white-space: nowrap; }
+  .caveats { margin-top: 12px; padding: 12px 16px; background: var(--warn-wash); color: var(--warn-ink); border-radius: 6px; font-size: 14px; max-width: none; }
+  .caveats b { font-weight: 600; }
+  ul { margin: 8px 0 0; padding-left: 20px; max-width: 80ch; } li { margin-top: 4px; }
+</style>
+<main>
+  <div class="eyebrow">Learner Information Framework · operational data flow</div>
+  <h1>Dual Credit Counselor Data Flow</h1>
+  <p class="story">As a college or high school counselor, I want a dashboard with aggregate data about dual credit students, and to drill from lists to individual, PII-integrated records of active dual credit students, so I can make resource decisions and advise students better.</p>
+  <p>The district stays on Ed-Fi and the college stays on its own LIF profile. What sits between them is the LIF data model, reached through the LIF Metadata Registry (MDR), with EDUcore supplying the schema knowledge and crosswalks the mapping is built from. Two figures: what happens once when the pair is set up, and what happens every time a counselor opens the dashboard.</p>
+
+  <h2>1. Set-up, once per district and college pair</h2>
+  <figure>
+    <svg viewBox="0 0 1000 292" role="img" aria-label="Set-up: the district's Ed-Fi OpenAPI and the college's LIF profile are registered in the MDR as source and target schemas; EDUcore crosswalks are drafted into a transformation group, which a person reviews in the MDR UI. Separately, the Identity Mapper is seeded at dual credit registration.">
+      <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+      <g fill="currentColor">
+        <!-- inputs -->
+        <rect x="20" y="50" width="250" height="70" rx="8" fill="var(--district-wash)" stroke="var(--district)" stroke-width="1.5"/>
+        <text x="145" y="80" text-anchor="middle" class="t" fill="var(--district)">District Ed-Fi ODS/API</text>
+        <text x="145" y="100" text-anchor="middle" class="s">publishes its OpenAPI · data unchanged</text>
+
+        <rect x="20" y="130" width="250" height="70" rx="8" fill="var(--college-wash)" stroke="var(--college)" stroke-width="1.5"/>
+        <text x="145" y="160" text-anchor="middle" class="t" fill="var(--college)">College LIF profile</text>
+        <text x="145" y="180" text-anchor="middle" class="s">OrgLIF: base LIF + inclusions</text>
+
+        <rect x="20" y="210" width="250" height="70" rx="8" fill="var(--educore-wash)" stroke="var(--educore)" stroke-width="1.5"/>
+        <text x="145" y="240" text-anchor="middle" class="t" fill="var(--educore)">EDUcore knowledge graph</text>
+        <text x="145" y="260" text-anchor="middle" class="s">CEDS-anchored crosswalks</text>
+
+        <!-- MDR -->
+        <rect x="360" y="10" width="300" height="276" rx="10" fill="var(--lif-wash)" stroke="var(--lif)" stroke-width="1.5"/>
+        <text x="510" y="36" text-anchor="middle" class="t" fill="var(--lif)">LIF Metadata Registry (MDR)</text>
+        <rect x="380" y="57" width="260" height="56" rx="6" fill="var(--panel)" stroke="var(--rule)"/>
+        <text x="510" y="90" text-anchor="middle" font-size="12">Source schema: District Ed-Fi</text>
+        <rect x="380" y="137" width="260" height="56" rx="6" fill="var(--panel)" stroke="var(--rule)"/>
+        <text x="510" y="170" text-anchor="middle" font-size="12">Target schema: College LIF</text>
+        <rect x="380" y="217" width="260" height="56" rx="6" fill="var(--panel)" stroke="var(--lif)"/>
+        <text x="510" y="241" text-anchor="middle" font-size="12" font-weight="600">Transformation group</text>
+        <text x="510" y="259" text-anchor="middle" class="s">rules · notes · origin tag</text>
+
+        <!-- right -->
+        <rect x="740" y="57" width="240" height="96" rx="8" fill="var(--panel)" stroke="currentColor" stroke-opacity=".45" stroke-dasharray="5 4"/>
+        <text x="860" y="88" text-anchor="middle" class="t">Identity Mapper</text>
+        <text x="860" y="108" text-anchor="middle" class="s">college id ↔ StudentUniqueId</text>
+        <text x="860" y="126" text-anchor="middle" class="s">seeded at dual credit registration</text>
+
+        <rect x="740" y="217" width="240" height="56" rx="8" fill="var(--panel)" stroke="currentColor" stroke-opacity=".45"/>
+        <text x="860" y="241" text-anchor="middle" class="t">Human review</text>
+        <text x="860" y="259" text-anchor="middle" class="s">MDR UI · REVIEW flags first</text>
+
+        <!-- arrows -->
+        <g stroke="currentColor" stroke-opacity=".6" stroke-width="1.5">
+          <line x1="270" y1="85" x2="378" y2="85" marker-end="url(#a1)"/>
+          <line x1="270" y1="165" x2="378" y2="165" marker-end="url(#a1)"/>
+          <line x1="270" y1="245" x2="378" y2="245" marker-end="url(#a1)"/>
+          <line x1="642" y1="245" x2="738" y2="245" marker-end="url(#a1)" marker-start="url(#a1)"/>
+        </g>
+        <text x="324" y="77" text-anchor="middle" class="l">upload</text>
+        <text x="324" y="157" text-anchor="middle" class="l">registered</text>
+        <text x="324" y="237" text-anchor="middle" class="l">drafted</text>
+        <text x="690" y="237" text-anchor="middle" class="l">edit</text>
+      </g>
+    </svg>
+    <figcaption>Set-up moves schemas and a mapping, never student data. Each rule records where it came from (EDUcore crosswalk or a person) and a note on what it does and what it loses. The Identity Mapper sits outside the MDR and is filled when students register for dual credit.</figcaption>
+  </figure>
+
+  <h2>2. Every request: a counselor opens the dashboard</h2>
+  <figure>
+    <svg viewBox="0 0 1080 432" role="img" aria-label="Run-time flow: 1 the dashboard queries the LIF GraphQL API; 2–3 the Query Planner checks the cache; 4 the Identity Mapper resolves the district id; 5 the Orchestrator runs a job; 6 the Ed-Fi adapter reads the district ODS/API; 7 the Translator applies MDR rules; 8 LIF fragments are cached; 9 records return to the dashboard.">
+      <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+      <g fill="currentColor">
+        <!-- row 1 -->
+        <rect x="20" y="40" width="230" height="76" rx="8" fill="var(--college-wash)" stroke="var(--college)" stroke-width="1.5"/>
+        <text x="135" y="72" text-anchor="middle" class="t" fill="var(--college)">Dual credit dashboard</text>
+        <text x="135" y="92" text-anchor="middle" class="s">aggregates + student drill-down</text>
+
+        <rect x="290" y="40" width="230" height="76" rx="8" fill="var(--lif-wash)" stroke="var(--lif)" stroke-width="1.5"/>
+        <text x="405" y="72" text-anchor="middle" class="t" fill="var(--lif)">LIF GraphQL API</text>
+        <text x="405" y="92" text-anchor="middle" class="s">list: ids · detail: full Person</text>
+
+        <rect x="560" y="40" width="230" height="76" rx="8" fill="var(--panel)" stroke="var(--lif)" stroke-width="1.5"/>
+        <text x="675" y="72" text-anchor="middle" class="t">Query Planner + Cache</text>
+        <text x="675" y="92" text-anchor="middle" class="s">cache hit skips Ed-Fi entirely</text>
+
+        <rect x="830" y="40" width="230" height="76" rx="8" fill="var(--panel)" stroke="var(--lif)" stroke-width="1.5"/>
+        <text x="945" y="72" text-anchor="middle" class="t">Identity Mapper</text>
+        <text x="945" y="92" text-anchor="middle" class="s">college id → StudentUniqueId</text>
+
+        <!-- row 2 -->
+        <rect x="290" y="190" width="230" height="76" rx="8" fill="var(--lif-wash)" stroke="var(--lif)" stroke-width="1.5"/>
+        <text x="405" y="222" text-anchor="middle" class="t" fill="var(--lif)">Translator</text>
+        <text x="405" y="242" text-anchor="middle" class="s">JSONata rules → LIF fragments</text>
+
+        <rect x="560" y="190" width="230" height="76" rx="8" fill="var(--panel)" stroke="var(--district)" stroke-width="1.5"/>
+        <text x="675" y="222" text-anchor="middle" class="t">Ed-Fi source adapter</text>
+        <text x="675" y="242" text-anchor="middle" class="s">students · sections · transcripts</text>
+
+        <rect x="830" y="190" width="230" height="76" rx="8" fill="var(--panel)" stroke="var(--lif)" stroke-width="1.5"/>
+        <text x="945" y="222" text-anchor="middle" class="t">Orchestrator + Dagster</text>
+        <text x="945" y="242" text-anchor="middle" class="s">one job per plan</text>
+
+        <!-- row 3 -->
+        <rect x="290" y="340" width="230" height="76" rx="8" fill="var(--lif-wash)" stroke="var(--lif)" stroke-width="1.5"/>
+        <text x="405" y="372" text-anchor="middle" class="t" fill="var(--lif)">MDR</text>
+        <text x="405" y="392" text-anchor="middle" class="s">Ed-Fi → College LIF rules</text>
+
+        <rect x="560" y="340" width="230" height="76" rx="8" fill="var(--district-wash)" stroke="var(--district)" stroke-width="1.5"/>
+        <text x="675" y="372" text-anchor="middle" class="t" fill="var(--district)">District Ed-Fi ODS/API</text>
+        <text x="675" y="392" text-anchor="middle" class="s">dualCreditIndicator = true → cohort</text>
+
+        <!-- arrows -->
+        <g stroke="currentColor" stroke-opacity=".6" stroke-width="1.5" fill="none">
+          <line x1="252" y1="78" x2="288" y2="78" marker-end="url(#a2)" marker-start="url(#a2)"/>
+          <line x1="522" y1="78" x2="558" y2="78" marker-end="url(#a2)" marker-start="url(#a2)"/>
+          <line x1="792" y1="78" x2="828" y2="78" marker-end="url(#a2)"/>
+          <line x1="945" y1="118" x2="945" y2="188" marker-end="url(#a2)"/>
+          <line x1="828" y1="228" x2="792" y2="228" marker-end="url(#a2)"/>
+          <line x1="675" y1="268" x2="675" y2="338" marker-end="url(#a2)" marker-start="url(#a2)"/>
+          <line x1="558" y1="228" x2="522" y2="228" marker-end="url(#a2)"/>
+          <line x1="405" y1="338" x2="405" y2="268" marker-end="url(#a2)"/>
+          <path d="M470,188 C470,150 610,160 610,118" marker-end="url(#a2)"/>
+        </g>
+        <text x="548" y="176" class="l">LIF fragments</text>
+        <text x="540" y="220" text-anchor="middle" class="l">raw</text>
+        <text x="417" y="308" class="l">rules</text>
+
+        <!-- step badges -->
+        <g>
+          <rect x="300" y="30" width="40" height="20" rx="10" fill="var(--ink)"/><text x="320" y="44" text-anchor="middle" class="b">1 · 9</text>
+          <rect x="570" y="30" width="56" height="20" rx="10" fill="var(--ink)"/><text x="598" y="44" text-anchor="middle" class="b">2 · 3 · 8</text>
+          <rect x="840" y="30" width="22" height="20" rx="10" fill="var(--ink)"/><text x="851" y="44" text-anchor="middle" class="b">4</text>
+          <rect x="840" y="180" width="22" height="20" rx="10" fill="var(--ink)"/><text x="851" y="194" text-anchor="middle" class="b">5</text>
+          <rect x="570" y="180" width="22" height="20" rx="10" fill="var(--ink)"/><text x="581" y="194" text-anchor="middle" class="b">6</text>
+          <rect x="300" y="180" width="22" height="20" rx="10" fill="var(--ink)"/><text x="311" y="194" text-anchor="middle" class="b">7</text>
+        </g>
+      </g>
+    </svg>
+    <figcaption>Badges follow one request and match the step numbers in the table below. Aggregates and drill-down take the same path with different GraphQL selections. Ed-Fi is read only on a cache miss; a nightly job can warm the cache for the whole cohort. An optional Learner Data Export can hand the same student back to the HS SIS in Ed-Fi shape.</figcaption>
+    <div class="legend"><span><i style="background:var(--district-wash);border-color:var(--district)"></i>district, Ed-Fi</span><span><i style="background:var(--lif-wash);border-color:var(--lif)"></i>LIF services and data model</span><span><i style="background:var(--college-wash);border-color:var(--college)"></i>college users</span><span><i style="background:var(--educore-wash);border-color:var(--educore)"></i>EDUcore</span></div>
+  </figure>
+
+  <h2>3. What each step is, in the repo</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Step</th><th>Component</th><th>Guide or reference</th><th>What is called</th></tr></thead>
+    <tbody>
+      <tr><td class="n">Set-up A</td><td>MDR source schema</td><td><code>docs/operations/guides/add-data-source.md</code></td><td><code>POST /datamodels/open_api_schema/upload</code> with the district's Ed-Fi OpenAPI, or <code>POST /exchange/receive</code> with a published bundle</td></tr>
+      <tr><td class="n">Set-up B</td><td>Mapping</td><td><code>components/lif/crosswalk_draft/README.md</code>, <code>docs/design/cross-cutting/schema-exchange.md</code></td><td><code>scripts/generate-crosswalk-draft.py --crosswalk edfi-to-lif.json --authored northgate-edfi-dual-credit-rules.json … --row-safe --notes …</code>, then <code>POST /exchange/receive</code>; review in the MDR UI. Targets the profile lacks are added with <code>POST /inclusions/</code>.</td></tr>
+      <tr><td class="n">Set-up C</td><td>Identity Mapper</td><td><code>docs/design/components/identity-mapper.md</code></td><td>one row per student: college person id ↔ district <code>StudentUniqueId</code>, written when the dual credit registration is processed</td></tr>
+      <tr><td class="n">1, 9</td><td>GraphQL API</td><td><code>docs/operations/guides/graphql-api-keys.md</code></td><td>cohort query over <code>Person.CourseLearningExperience</code> / <code>ProgramLearningExperience</code>; detail query by identifier</td></tr>
+      <tr><td class="n">2, 3, 8</td><td>Query Planner, Query Cache</td><td><code>docs/overview/services-overview.md</code></td><td>plan parts per information source; cache keyed by person and fragment path</td></tr>
+      <tr><td class="n">4</td><td>Identity Mapper</td><td>same</td><td>lookup by (organization, person id) → district identifier</td></tr>
+      <tr><td class="n">5, 6, 7</td><td>Orchestrator, Dagster, Ed-Fi adapter, Translator</td><td><code>docs/operations/guides/creating-a-data-source-adapter.md</code></td><td>a <code>PIPELINE_INTEGRATED</code> adapter with <code>credential_keys = ["host", "scheme", "token"]</code> returning raw Ed-Fi JSON; the orchestrator posts it to <code>/translate/source/{edfi}/target/{college}</code></td></tr>
+      <tr><td class="n">Optional</td><td>Learner Data Export</td><td><code>docs/operations/guides/lde-api-keys.md</code></td><td><code>GET /available-data-formats</code>, <code>GET /exports</code> with the reverse group so the HS SIS receives Ed-Fi</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>4. The dual credit mapping, as built on the demo stack</h2>
+  <p>Ed-Fi says "dual credit" on the enrollment, not the course: <code>StudentSectionAssociation.DualCredit</code> carries the indicator, a type descriptor (Grand Bend uses "Dual Enrollment"), a high-school-credit indicator, and the awarding institution as either an education organization reference or an institution descriptor. LIF has no dual-credit element. So the mapping does three things, each an ordinary registry operation:</p>
+  <ul>
+    <li><b>Source side.</b> The district's Ed-Fi model gains a <code>StudentSectionAssociation</code> entity with eleven attributes, created through the public MDR API by the alignment script, on both registries.</li>
+    <li><b>Target side.</b> The college profile includes two base LIF attributes it did not expose before, <code>Course.courseLevelCharacteristic</code> and <code>Course.recognizedBy</code>, with one inclusion call each. No change to base LIF.</li>
+    <li><b>Rules.</b> Two authored rules iterate the transcript courses and join to the student's sections inside the JSONata (<code>LocalCourseCode = CourseCode and DualCreditIndicator = true</code>), writing "Dual Credit" and the awarding organization onto the matching course entries and nothing onto the rest. They were drafted with the same CLI as the other rules and received as version 0.2 of each mapping.</li>
+  </ul>
+  <p>Verified live: Grand Bend's two dual credit students, Jeremy Coleman and Diana Holt, translate through both colleges with <code>ELA-01</code> flagged "Dual Credit", recognized by 9999 (descriptor path) and 6000203 (organization reference path). Students without a dual credit section are unchanged. The dashboard's cohort is then "persons with a course whose <code>courseLevelCharacteristic</code> is Dual Credit", and the aggregate is a count over those course entries by college and term.</p>
+
+  <p class="caveats"><b>What is real today and what is not.</b> Real: the registry, translator, adapter contract, identity mapper, cache and GraphQL path exist and are the documented way to add a source; the Ed-Fi to college LIF mapping, dual credit included, runs live on the demo stack against Ed-Fi's Grand Bend sample data, row-safe, with every rule carrying its origin and a note. Not yet built: the Ed-Fi source adapter itself (the guide describes the contract; the demo posts to the translator directly), the dashboard, and the identity rows, which need a registration event or a shared state identifier. Two LIF behaviors to plan around: the Translator applies every mapping group registered for a source and target pair and does not pick a version, so superseded drafts must be deleted or deprecated; and <code>DualCreditType</code> and <code>DualHighSchoolCreditIndicator</code> have no target in this profile and are dropped, which the rule Notes state. EDUcore supplies one value crosswalk and the Ed-Fi element definitions today; property-level LIF anchors are the outstanding EDUcore work, and its connector token needs re-authorizing. PII in the drill-down is governed by the GraphQL API's credentials and the tenant scoping of the LIF deployment, not by anything in this flow.</p>
+
+  <h2>5. Where LIF gets installed</h2>
+  <p>Nothing is installed at the district. The district keeps its Ed-Fi ODS/API and grants one API client to the adapter. LIF runs at the college, or wherever the college's LIF tenant is hosted, and that is where the dashboard's GraphQL queries go. The repo's guide for this is <code>docs/operations/guides/deploying-lif-at-your-institution.md</code>.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Shape</th><th>Use it for</th><th>Start from</th></tr></thead>
+    <tbody>
+      <tr><td class="n">Local eval</td><td>What the demo stack is: the whole stack on one machine with seeded sample data. Enough to prove the mapping and drive the counselor page from the translator.</td><td><code>deployments/advisor-demo-docker/</code>, <code>docker compose up --build -d</code></td></tr>
+      <tr><td class="n">Single node, your data</td><td>A pilot with one college's real non-production data. Copy the demo compose into <code>deployments/&lt;your-org&gt;/</code>, register the college profile and the district's Ed-Fi model in the MDR, add the Ed-Fi adapter.</td><td>The guide, steps 2 to 6</td></tr>
+      <tr><td class="n">Cloud, multi-org</td><td>Production, several colleges or districts as tenants, external access. Only the LIF Initiative's own AWS environment is documented today; adapt it, do not drop it in.</td><td><code>docs/operations/guides/deployment.md</code>; portable reference tracked in issue #1004</td></tr>
+    </tbody>
+  </table></div>
+</main>
+
+</body></html>
